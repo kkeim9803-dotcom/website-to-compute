@@ -1,56 +1,78 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="ko">
 <head>
-  <!-- 
-      This is an HTML comment
-      You can write text in a comment and the content won't be visible in the page
-    -->
-
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="icon" href="https://glitch.com/favicon.ico" />
-
-  <!--
-      This is the page head - it contains info the browser uses
-      Like the title, which appears on the browser tab but not inside the page
-      Further down you'll see the content that displays in the page
-    -->
-  <title>Hello World!</title>
-
-  <!-- The website stylesheet -->
-  <link rel="stylesheet" href="/style.css" />
-
-  <!-- The website JavaScript file -->
-  <script src="/script.js" defer></script>
+  <title>Dress-Up Mini Game</title>
+  <style>
+    body{margin:0;background:#f6f7fb;font-family:sans-serif}
+    .app{display:grid;grid-template-columns:320px 1fr;gap:16px;min-height:100vh;padding:16px}
+    .panel{background:#fff;border-radius:18px;box-shadow:0 8px 24px rgba(0,0,0,.08);padding:16px;display:flex;flex-direction:column;}
+    .wardrobe-list{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;overflow:auto;}
+    .item{background:#fafafa;border:1px dashed #e5e7eb;border-radius:14px;padding:10px;display:flex;align-items:center;justify-content:center;cursor:grab}
+    .canvas-wrap{position:relative;height:90vh;border-radius:14px;border:1px solid #e5e7eb;background:#fff}
+    .avatar{position:absolute;left:50%;transform:translateX(-50%);bottom:0;width:360px;pointer-events:none}
+    .placed{position:absolute;cursor:move}
+  </style>
 </head>
-
 <body>
-  <!--
-      The body includes the content you see in the page
-      Each element is defined using tags, like this <div></div>
-      The attributes like class="wrapper" let us style elements in the CSS
-    -->
-  <div class="wrapper">
-    <div class="content" role="main">
-      <h1 class="title">Oh hi website!</h1>
-      <img src="/cool-website.svg" class="illustration" alt="cool website" />
-      <div class="instructions">
-        <p>
-          Fork <a href="https://github.com/glitchdotcom/website-to-compute">this project</a> and open it in a GitHub Codespace.
-        </p>
-        <p> Follow the steps in the README to deploy your new website to Fastly in a few steps!
-        </p>
+  <div class="app">
+    <aside class="panel">
+      <h2>Wardrobe</h2>
+      <div class="wardrobe-list" id="wardrobeList"></div>
+    </aside>
 
+    <main class="panel">
+      <h2>Stage</h2>
+      <div class="canvas-wrap">
+        <div id="stage" style="position:absolute;inset:0;"></div>
+        <svg class="avatar" viewBox="0 0 200 420">
+          <circle cx="100" cy="62" r="36" fill="#ffdfc9"/>
+          <rect x="66" y="98" width="68" height="120" rx="28" fill="#ffdfc9"/>
+          <rect x="70" y="218" width="24" height="140" rx="12" fill="#ffdfc9"/>
+          <rect x="106" y="218" width="24" height="140" rx="12" fill="#ffdfc9"/>
+        </svg>
       </div>
-
-      <footer class="footer">
-        <div>
-          <a class="remix" href="https://github.com/glitchdotcom/website-to-compute">🚧 Get your own site</a>
-        </div>
-      </footer>
-    </div>
+    </main>
   </div>
-</body>
 
+  <script>
+    const ITEMS = [
+      { id:'hair', svg:`<svg viewBox="0 0 180 120"><path d="M10,60 q80-80 160,0 v40 h-160z" fill="#222"/></svg>`, w:180, h:120 },
+      { id:'top', svg:`<svg viewBox="0 0 160 120"><rect x="20" y="20" width="120" height="70" fill="#60a5fa"/></svg>`, w:160, h:120 },
+      { id:'bottom', svg:`<svg viewBox="0 0 150 140"><rect x="30" y="10" width="40" height="120" fill="#2563eb"/></svg>`, w:150, h:140 },
+      { id:'shoes', svg:`<svg viewBox="0 0 160 70"><rect x="20" y="30" width="120" height="20" rx="10" fill="#111827"/></svg>`, w:160, h:70 }
+    ];
+
+    const wardrobeList = document.getElementById("wardrobeList");
+    const stage = document.getElementById("stage");
+
+    ITEMS.forEach(item=>{
+      const div=document.createElement("div");
+      div.className="item";
+      div.draggable=true;
+      div.innerHTML=item.svg;
+      div.addEventListener("dragstart", e=>{
+        e.dataTransfer.setData("id", item.id);
+      });
+      wardrobeList.appendChild(div);
+    });
+
+    stage.addEventListener("dragover", e=>e.preventDefault());
+    stage.addEventListener("drop", e=>{
+      e.preventDefault();
+      const id=e.dataTransfer.getData("id");
+      const spec=ITEMS.find(i=>i.id===id);
+      if(!spec) return;
+      const el=document.createElement("div");
+      el.className="placed";
+      el.style.width=spec.w+"px";
+      el.style.height=spec.h+"px";
+      el.style.left=(e.offsetX-spec.w/2)+"px";
+      el.style.top=(e.offsetY-spec.h/2)+"px";
+      el.innerHTML=spec.svg;
+      stage.appendChild(el);
+    });
+  </script>
+</body>
 </html>
+
