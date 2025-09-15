@@ -1,56 +1,336 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="ko">
 <head>
-  <!-- 
-      This is an HTML comment
-      You can write text in a comment and the content won't be visible in the page
-    -->
-
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="icon" href="https://glitch.com/favicon.ico" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>나만의작은노짱</title>
+  <style>
+    .placed {
+  position:absolute;
+  max-width:150px;
+  transform-origin:center center;
+  touch-action:none;
+  z-index:10;
+  user-select:none;   /* 텍스트/이미지 선택 방지 */
+  -webkit-user-drag:none; /* iOS/사파리 기본 이미지 드래그 방지 */
+  pointer-events:auto; /* 개별 아이템만 터치 가능 */
+}
+    body { margin:0; background:#f6f7fb; font-family:sans-serif; }
+    .app { display:flex; flex-direction:column; gap:12px; min-height:100vh; padding:12px; }
+    .panel { background:#fff; border-radius:16px; box-shadow:0 8px 24px rgba(0,0,0,.08); padding:16px; }
+    .wardrobe h2 { margin:0 0 10px; font-size:18px; }
+    .tabs { display:flex; gap:6px; margin-bottom:8px; flex-wrap:wrap; }
+    .tabs button { border:0; padding:6px 10px; border-radius:8px; background:#f3f4f6; cursor:pointer; }
+    .wardrobe-list { display:grid; grid-template-columns:repeat(auto-fill,minmax(60px,1fr)); gap:8px; }
+    .item-img { width:100%; border-radius:8px; display:block; }
+    .stage { position:relative; height:65vh; border:1px solid #ddd; border-radius:16px; overflow:hidden; touch-action:none; }
+    .background {
+      position:absolute;
+      top:0; left:0;
+      width:100%; height:100%;
+      object-fit:cover;
+      z-index:-1; /* 무대 맨 뒤 */
+    }
+    .avatar {
+      position:absolute;
+      top:50%; left:50%;
+      transform:translate(-50%,-50%);
+      width:270px;
+      z-index:0;
+    }
+    .controls { display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap; }
+    .btn { border:0; background:#111827; color:#fff; padding:8px 12px; border-radius:8px; cursor:pointer; font-size:14px; }
+    select { padding:6px; border-radius:8px; }
+    .page-source {
+  text-align:center;
+  padding:10px;
+  font-size:10px;
+  color:#666;
+  background:#f0f0f0;   /* 회색 배경 살짝 */
+}
 
-  <!--
-      This is the page head - it contains info the browser uses
-      Like the title, which appears on the browser tab but not inside the page
-      Further down you'll see the content that displays in the page
-    -->
-  <title>Hello World!</title>
-
-  <!-- The website stylesheet -->
-  <link rel="stylesheet" href="/style.css" />
-
-  <!-- The website JavaScript file -->
-  <script src="/script.js" defer></script>
+.page-watermark {
+  text-align:center;
+  padding:6px;
+  font-size:12px;
+  color:#999;
+  background:#fafafa;   /* 연한 배경 */
+}
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
-
 <body>
-  <!--
-      The body includes the content you see in the page
-      Each element is defined using tags, like this <div></div>
-      The attributes like class="wrapper" let us style elements in the CSS
-    -->
-  <div class="wrapper">
-    <div class="content" role="main">
-      <h1 class="title">Oh hi website!</h1>
-      <img src="/cool-website.svg" class="illustration" alt="cool website" />
-      <div class="instructions">
-        <p>
-          Fork <a href="https://github.com/glitchdotcom/website-to-compute">this project</a> and open it in a GitHub Codespace.
-        </p>
-        <p> Follow the steps in the README to deploy your new website to Fastly in a few steps!
-        </p>
-
-      </div>
-
-      <footer class="footer">
-        <div>
-          <a class="remix" href="https://github.com/glitchdotcom/website-to-compute">🚧 Get your own site</a>
-        </div>
-      </footer>
-    </div>
-  </div>
+  <body>
+  <!-- 전체 상단 출처 -->
+  <div class="page-source">제작:잉잉이야 BGM출처:궁궭궭,노수현Replay,
+    노수현아카이브,노스타 노수현티비<br>
+    첫제작이라 미흡하지만예쁘게봐주세요잉잉이야❤️</div>
 </body>
+  <div class="app">
+    <!-- 옷장 -->
+    <aside class="panel wardrobe">
+      <h2>노수의옷장</h2>
+      <div class="tabs">
+        <button data-cat="all">전체</button>
+        <button data-cat="top">상의</button>
+        <button data-cat="hat">모자</button>
+        <button data-cat="accessory">악세사리</button>
+      </div>
+      <div class="wardrobe-list" id="wardrobe"></div>
+    </aside>
 
-</html>
+    <!-- 무대 -->
+     
+     <div class="page-watermark">배경을바꾸고저장하면 어울리는노래가나와요<br>삭제버튼시 노래제거
+    <main class="panel">
+      <div class="controls">
+        <button class="btn" id="avatarBtn">귀문오픈</button>
+        <button class="btn" id="bgBtn">배경 바꾸기</button>
+        <button class="btn" id="rotateLeft">⟲ 회전</button>
+        <button class="btn" id="rotateRight">⟳ 회전</button>
+        <button class="btn" id="deleteBtn">삭제</button>
+        <button class="btn" id="finishBtn">저장</button>
+      </div>
+      <div class="stage" id="stage">
+        <!-- 배경 이미지 -->
+        <img class="background" id="bgImage" src="bg1.jpg" alt="background">
+        <!-- 기본 아바타 이미지 -->
+        <img class="avatar" id="avatar" src="avatar1.png" alt="avatar">
+        
+        
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const wardrobe = document.getElementById("wardrobe");
+    const stage = document.getElementById("stage");
+    const avatarImg = document.getElementById("avatar");
+    let zCounter=1, selected=null;
+
+    // 아바타 세트 (PNG 파일 준비)
+    const avatars = ["avatar1.png", "avatar2.png"];
+    let avatarIndex = 0;
+    document.getElementById("avatarBtn").onclick = ()=>{
+      avatarIndex = (avatarIndex+1) % avatars.length;
+      avatarImg.src = avatars[avatarIndex];
+    };
+
+    // 의상 아이템 (이미지 기반)
+    const items = [
+ {src:"흑예지맛대맛.png", cat:"top"},
+  {src:"노바니옷.png", cat:"top"},
+          {src:"노군인.png", cat:"top"},
+          {src:"노스님.png", cat:"top"},
+          {src:"노제주옷.png", cat:"top"},
+           {src:"노테토.png", cat:"top"},
+            {src:"노카자의상.png", cat:"top"},
+ {src:"노흰둥.png", cat:"top"},
+ {src:"노엑셀탈주날의상.png", cat:"top"},
+ {src:"노수현맥주궁.png", cat:"top"},
+ {src:"숨고옷.png", cat:"top"},
+ {src:"노이클잭슨의상.png", cat:"top"},
+{src:"노이클잭슨모자.png", cat:"hat"},
+{src:"노흰둥머리띠.png", cat:"hat"},
+{src:"노바니머리띠.png",cat:"hat"},
+{src:"숨고모자.png", cat:"hat"},
+{src:"노엑셀탈주날.png", cat:"hat"},
+ {src:"노대근.png",cat:"hat"},
+ {src:"노카자머리.png",cat:"hat"},
+  {src:"노삭발.png",cat:"hat"},
+  {src:"노수령.png",cat:"hat"},
+ {src:"노양털.png", cat:"hat"},
+ {src:"제주도.png", cat:"hat"},
+  {src:"베르사체개방석.png", cat:"accessory"},
+     {src:"치킨.png", cat:"accessory"},
+        {src:"맛대맛슬리퍼.png", cat:"accessory"},
+      {src:"무기.png", cat:"accessory"},
+      {src:"애착가방.png", cat:"accessory"},
+  {src:"셀카봉.png", cat:"accessory"},
+   {src:"민트.png", cat:"accessory"},
+       {src:"주먹밥.png", cat:"accessory"},
+            {src:"민민트.png", cat:"accessory"}
+    ];
+
+    function renderWardrobe(cat="all"){
+      wardrobe.innerHTML="";
+      items.filter(i=>cat==="all"||i.cat===cat).forEach(i=>{
+        const div=document.createElement("div");
+        div.className="item";
+        const img=document.createElement("img");
+        img.src=i.src;
+        img.className="item-img";
+        div.appendChild(img);
+        div.addEventListener("click",()=>addItem(i.src));
+        wardrobe.appendChild(div);
+      });
+    }
+    document.querySelectorAll(".tabs button").forEach(btn=>{
+      btn.addEventListener("click",()=>renderWardrobe(btn.dataset.cat));
+    });
+    renderWardrobe();
+
+      // 배경 교체
+      const bgImages = [
+    "url('노카자술식.jpg')",
+    "url('숨고.png')",
+  "url('노집.jpg')",
+  "url('타임스퀘어.jpg')",
+      "url('명성황후.jpg')",
+      "url('매미.jpg')"
+  ];
+  let bgIndex = 0;
+
+  document.getElementById("bgBtn").onclick = () => {
+    bgIndex = (bgIndex+1) % bgImages.length;
+    const stage = document.getElementById("stage");
+    stage.style.backgroundImage = bgImages[bgIndex];
+    stage.style.backgroundSize = "cover";
+    stage.style.backgroundPosition = "center";
+  };
+
+      // 아이템 무대에 추가
+      function addItem(src){
+        const el=document.createElement("img");
+        el.className="placed";
+        el.src=src;
+        el.style.left="100px";
+        el.style.top="100px";
+        el.style.zIndex=++zCounter;
+        el.dataset.scale=1; el.dataset.angle=0;
+        stage.appendChild(el);
+        enableTouchDrag(el);
+        enableGesture(el);
+        select(el);
+      }
+
+      // 선택
+      function select(el){
+        if(selected) selected.style.outline="";
+        selected=el;
+        if(el) el.style.outline="2px dashed #6366f1";
+      }
+
+      // 드래그
+      function enableTouchDrag(el){
+        let dragging=false,startX=0,startY=0,origX=0,origY=0;
+        el.addEventListener("touchstart", e=>{
+          if(e.touches.length===1){
+            dragging=true;
+            startX=e.touches[0].clientX; startY=e.touches[0].clientY;
+            origX=parseInt(el.style.left); origY=parseInt(el.style.top);
+            el.style.zIndex=++zCounter; select(el);
+          }
+        });
+        stage.addEventListener("touchmove", e=>{
+          if(dragging && e.touches.length===1){
+            e.preventDefault();
+            const x=origX+(e.touches[0].clientX-startX);
+            const y=origY+(e.touches[0].clientY-startY);
+            el.style.left=x+"px"; el.style.top=y+"px";
+          }
+        },{passive:false});
+        stage.addEventListener("touchend", e=>{
+          
+          dragging=false;
+        });
+      }
+
+      // 핀치 줌
+      function enableGesture(el){
+        let startDist=0,startScale=1;
+        el.addEventListener("touchstart", e=>{
+          if(e.touches.length===2){
+            startDist=getDist(e.touches);
+            startScale=parseFloat(el.dataset.scale||1);
+          }
+        });
+        el.addEventListener("touchmove", e=>{
+          if(e.touches.length===2){
+            e.preventDefault();
+            let newDist=getDist(e.touches);
+            let scale=startScale*(newDist/startDist);
+            scale=Math.max(0.2,Math.min(10,scale));
+            el.dataset.scale=scale;
+            applyTransform(el);
+          }
+        },{passive:false});
+      }
+      function getDist(touches){
+        const dx=touches[0].clientX-touches[1].clientX;
+        const dy=touches[0].clientY-touches[1].clientY;
+        return Math.hypot(dx,dy);
+      }
+
+      // 회전
+      function applyTransform(el){
+        el.style.transform=`scale(${el.dataset.scale||1}) rotate(${el.dataset.angle||0}deg)`;
+      }
+      document.getElementById("rotateLeft").onclick=()=>{
+        if(selected){ selected.dataset.angle=(+selected.dataset.angle||0)-15; applyTransform(selected); }
+      };
+      document.getElementById("rotateRight").onclick=()=>{
+        if(selected){ selected.dataset.angle=(+selected.dataset.angle||0)+15; applyTransform(selected); }
+      };
+
+      // 삭제
+      document.getElementById("deleteBtn").onclick=()=>{
+        if(selected){ selected.remove(); selected=null; }
+      };
+
+      // 음악 + 메시지
+      const bgConfig = [
+  { music:"노카자.mp3", message:"노카자 술식전개" },        // 노카자술식.jpg
+  { music:"곤지름.mp3", message:"3개였는데 5개됐어" },      // 숨고.png
+  { music:"노테토.mp3", message:"군인이 되버렸어요" },      // 노집.jpg
+  { music:"노이클잭슨.mp3", message:"???: 여기주변에식당있어요?" }, // 타임스퀘어.jpg
+  { music:"노국모.mp3", message:"내가조선의국모" },          // 명성황후.jpg
+    { music:"노매미.mp3", message:"맴맴맴맴" }          // 매.jpg
+];
+
+ // 전역 변수 (현재 재생 중인 음악)
+let currentAudio = null;
+
+// 완성 버튼
+document.getElementById("finishBtn").onclick=()=>{
+  const config = bgConfig[bgIndex];
+
+  html2canvas(stage, {useCORS:true}).then(canvas=>{
+    const link=document.createElement("a");
+    link.download="dressup.png";
+    link.href=canvas.toDataURL();
+    link.click();
+
+    // 음악 실행 전에 기존 음악이 있으면 정지
+    if(currentAudio){
+      currentAudio.pause();
+      currentAudio = null;
+    }
+
+    currentAudio = new Audio(config.music);
+    currentAudio.play().catch(err=>{
+      console.log("음악 재생 실패:", err);
+    });
+
+    alert(config.message);
+  });
+};
+
+// 삭제 버튼
+document.getElementById("deleteBtn").onclick=()=>{
+  if(selected){ 
+    selected.remove(); 
+    selected=null; 
+  }
+
+  // 음악 정지
+  if(currentAudio){
+    currentAudio.pause();
+    currentAudio.currentTime = 0; // 처음으로 되감기
+    currentAudio = null;
+  }
+};
+
+    </script>
+  </body>
+  </html>
